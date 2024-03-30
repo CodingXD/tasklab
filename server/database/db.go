@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -14,10 +13,7 @@ import (
 func GetDB() (*pgxpool.Pool, error) {
 	var dbPool *pgxpool.Pool
 	var once sync.Once
-	i := 1
 	once.Do(func() {
-		fmt.Println("Connection Attempt:", i)
-		i++
 		poolConfig, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
 		if err != nil {
 			log.Fatal(err)

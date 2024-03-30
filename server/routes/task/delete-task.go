@@ -37,7 +37,7 @@ func DeleteTask(c *fiber.Ctx) error {
 		return err
 	}
 
-	_, err = db.Exec(context.Background(), "DELETE FROM task WHERE id = $1", v.Id)
+	_, err = db.Exec(context.Background(), "DELETE FROM tasks WHERE id = $1", v.Id)
 	if err != nil {
 		return err
 	}

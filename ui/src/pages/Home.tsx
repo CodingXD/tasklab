@@ -17,6 +17,9 @@ import {
 import { type Key, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { status } from "../lib/constants/status";
+import { useUserStore } from "../store/user";
+import { useQuery } from "@tanstack/react-query";
+import { fetcher } from "../lib/utils/fetcher";
 
 const filters = [{ label: "All", key: "all" }, ...status];
 
@@ -69,11 +72,20 @@ const statusColorMap = {
 };
 
 export default function Home() {
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, seterror] = useState();
+  const user = useUserStore((state) => state.user);
+  const [activeStatus, setActiveStatus] = useState("all");
   const [selectedTasks, setSelectedTasks] = useState(new Set([]));
-  const role = "admin";
+  const [limit, setLimit] = useState(10);
+  const [offset, setOffset] = useState(0);
+  const queryKey = ``;
+  const { data, isLoading, error } = useQuery({
+    queryKey: [queryKey],
+    queryFn: () =>
+      fetcher
+        .get("/task/list", { params: { limit, offset, status: activeStatus } })
+        .then(({ data }) => data),
+    enabled: !!user,
+  });
 
   const renderCell = useCallback(
     (task: (typeof rows)[number], columnKey: Key) => {
@@ -103,7 +115,7 @@ export default function Home() {
         case "actions":
           return (
             <div className="relative flex items-center gap-2">
-              {["superadmin", "admin"].includes(role) ? (
+              {["member", "admin"].includes(user?.role ?? "member") ? (
                 <Tooltip color="danger" content="Delete task">
                   <span className="text-lg text-danger cursor-pointer active:opacity-50">
                     <TrashIcon
@@ -132,8 +144,8 @@ export default function Home() {
           {filters.map(({ key, label }) => (
             <Button
               key={key}
-              onPress={() => setActiveFilter(key)}
-              color={activeFilter === key ? "primary" : "default"}
+              onPress={() => setActiveStatus(key)}
+              color={activeStatus === key ? "primary" : "default"}
             >
               {label}
             </Button>

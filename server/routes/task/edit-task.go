@@ -15,8 +15,8 @@ func EditTask(c *fiber.Ctx) error {
 	v := new(struct {
 		Id            string   `json:"id" validate:"required,uuid4"`
 		Title         string   `json:"title" validate:"required,min=1"`
-		Description   string   `json:"description" validate:"optional"`
-		DueDate       string   `json:"dueDate" validate:"optional,datetime"`
+		Description   string   `json:"description" validate:"omitempty"`
+		DueDate       string   `json:"dueDate" validate:"omitempty,datetime"`
 		Status        string   `json:"status" validate:"required,oneof=todo inprogress done"`
 		Collaborators []string `json:"collaborators" validate:"required,gte=0,dive,uuid4"`
 	})
@@ -40,7 +40,7 @@ func EditTask(c *fiber.Ctx) error {
 
 	ctx := context.Background()
 
-	_, err = db.Exec(ctx, "UPDATE task SET title = $1, description = $2, status = $3, due_date = $4, updated_at = NOW() WHERE id = $5", v.Title, v.Description, v.Status, v.DueDate, v.Id)
+	_, err = db.Exec(ctx, "UPDATE tasks SET title = $1, description = $2, status = $3, due_date = $4, updated_at = NOW() WHERE id = $5", v.Title, v.Description, v.Status, v.DueDate, v.Id)
 	if err != nil {
 		return err
 	}

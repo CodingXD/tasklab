@@ -14,9 +14,9 @@ func CreateTask(c *fiber.Ctx) error {
 	// getting body values
 	v := new(struct {
 		Title         string   `json:"title" validate:"required,min=1"`
-		Description   string   `json:"description" validate:"optional"`
+		Description   string   `json:"description" validate:"omitempty"`
 		CreatedBy     string   `json:"createdBy" validate:"required,uuid4"`
-		DueDate       string   `json:"dueDate" validate:"optional,datetime"`
+		DueDate       string   `json:"dueDate" validate:"omitempty,datetime"`
 		Status        string   `json:"status" validate:"required,oneof=todo inprogress done"`
 		Collaborators []string `json:"collaborators" validate:"required,gte=0,dive,uuid4"`
 	})
@@ -41,7 +41,7 @@ func CreateTask(c *fiber.Ctx) error {
 	ctx := context.Background()
 
 	var id string
-	err = db.QueryRow(ctx, "INSERT INTO task(title, description, status, due_date, created_by) VALUES($1, $2, $3, $4, $5) RETURNING id", v.Title, v.Description, v.Status, v.DueDate, v.CreatedBy).Scan(&id)
+	err = db.QueryRow(ctx, "INSERT INTO tasks(title, description, status, due_date, created_by) VALUES($1, $2, $3, $4, $5) RETURNING id", v.Title, v.Description, v.Status, v.DueDate, v.CreatedBy).Scan(&id)
 	if err != nil {
 		return err
 	}

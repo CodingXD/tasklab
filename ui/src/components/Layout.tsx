@@ -1,21 +1,18 @@
 import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3Icon,
+  UserCircleIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { NextUIProvider } from "@nextui-org/react";
 import { useUserStore } from "../store/user";
 
-const navigation = [
-  { name: "Tasks", href: "/", heading: "Tasks", current: true },
-];
 const userNavigation = [
   { name: "Your Profile", href: "/profile" },
   { name: "Settings", href: "/settings" },
 ];
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
 
 export default function Layout() {
   const { user, setUser } = useUserStore();
@@ -23,7 +20,8 @@ export default function Layout() {
   const navigate = useNavigate();
 
   if (!user) {
-    return navigate("/login", { replace: true, unstable_viewTransition: true });
+    navigate("/login", { replace: true, unstable_viewTransition: true });
+    return <></>;
   }
 
   const logout = () => {
@@ -50,31 +48,6 @@ export default function Layout() {
                           src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=300"
                           alt="Your Company"
                         />
-                      </div>
-                      <div className="hidden lg:ml-10 lg:block">
-                        <div className="flex space-x-4">
-                          {navigation.map((item) => (
-                            <NavLink
-                              key={item.name}
-                              to={item.href}
-                              className={({ isActive, isPending }) => {
-                                let className =
-                                  "rounded-md py-2 px-3 text-sm font-medium ";
-                                if (isPending) {
-                                  className += "pending";
-                                } else if (isActive) {
-                                  className += "bg-indigo-700 text-white";
-                                } else {
-                                  className +=
-                                    "text-white hover:bg-indigo-500 hover:bg-opacity-75";
-                                }
-                                return className;
-                              }}
-                            >
-                              {item.name}
-                            </NavLink>
-                          ))}
-                        </div>
                       </div>
                     </div>
                     <div className="flex lg:hidden">
@@ -103,11 +76,7 @@ export default function Layout() {
                             <Menu.Button className="relative flex rounded-full bg-indigo-600 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
                               <span className="absolute -inset-1.5" />
                               <span className="sr-only">Open user menu</span>
-                              <img
-                                className="size-8 rounded-full"
-                                src={UserIcon}
-                                alt=""
-                              />
+                              <UserCircleIcon className="size-8 rounded-full" />
                             </Menu.Button>
                           </div>
                           <Transition
@@ -155,32 +124,10 @@ export default function Layout() {
                 </div>
 
                 <Disclosure.Panel className="lg:hidden">
-                  <div className="space-y-1 px-2 pb-3 pt-2">
-                    {navigation.map((item) => (
-                      <Disclosure.Button
-                        key={item.name}
-                        as="a"
-                        href={item.href}
-                        className={classNames(
-                          item.current
-                            ? "bg-indigo-700 text-white"
-                            : "text-white hover:bg-indigo-500 hover:bg-opacity-75",
-                          "block rounded-md py-2 px-3 text-base font-medium"
-                        )}
-                        aria-current={item.current ? "page" : undefined}
-                      >
-                        {item.name}
-                      </Disclosure.Button>
-                    ))}
-                  </div>
                   <div className="border-t border-indigo-700 pb-3 pt-4">
                     <div className="flex items-center px-5">
                       <div className="flex-shrink-0">
-                        <img
-                          className="size-10 rounded-full"
-                          src={UserIcon}
-                          alt=""
-                        />
+                        <UserCircleIcon className="size-10 rounded-full" />
                       </div>
                       <div className="ml-3">
                         <div className="text-base font-medium text-white">
@@ -217,10 +164,7 @@ export default function Layout() {
           <header className="py-10">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold tracking-tight text-white">
-                {
-                  navigation.find(({ href }) => href.startsWith(pathname))
-                    ?.heading
-                }
+                {pathname === "/" && "Tasks"}
               </h1>
             </div>
           </header>

@@ -13,7 +13,7 @@ func ListTasks(c *fiber.Ctx) error {
 	// getting query values
 	v := new(struct {
 		Limit  int `json:"limit" validate:"required,gte=1"`
-		Offset int `json:"offset" validate:"optional,gte=0"`
+		Offset int `json:"offset" validate:"omitempty,gte=0"`
 	})
 	if err := c.QueryParser(v); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -45,7 +45,7 @@ func ListTasks(c *fiber.Ctx) error {
 		Role        string `json:"role"`
 	}
 
-	rows, err := db.Query(context.Background(), "SELECT task.id, title, description, status, due_date, first_name, last_name, email, role FROM task, users WHERE task.created_by = users.id AND limit = $1 AND offset = $2", v.Limit, v.Offset)
+	rows, err := db.Query(context.Background(), "SELECT tasks.id, title, description, status, due_date, first_name, last_name, email, role FROM tasks, users WHERE tasks.created_by = users.id limit $1 offset $2", v.Limit, v.Offset)
 	if err != nil {
 		return err
 	}
