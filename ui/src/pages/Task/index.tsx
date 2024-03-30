@@ -7,7 +7,7 @@ import {
   SelectItem,
   Textarea,
 } from "@nextui-org/react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { schema } from "./schema";
@@ -17,6 +17,8 @@ import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { fetcher } from "../../lib/utils/fetcher";
 import { useUserStore } from "../../store/user";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 
 type FormFields = Output<typeof schema>;
 type User = {
@@ -37,6 +39,7 @@ type Task = {
 export default function Task() {
   const user = useUserStore((state) => state.user);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   let [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,7 +115,7 @@ export default function Task() {
   });
   const editTask = useMutation({
     mutationFn: (data: FormFields) => fetcher.put("/task/edit", data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [id] }),
+    onSuccess: () => queryClient.clear(),
     onError: (error: any) =>
       setError("root", {
         message:
@@ -120,16 +123,31 @@ export default function Task() {
       }),
   });
 
-  const onSubmit: SubmitHandler<FormFields> = async (data) => {
+  const onSubmit: SubmitHandler<FormFields> = (data) => {
     if (data.id) {
-      await editTask.mutateAsync(data);
+      toast.promise(editTask.mutateAsync(data), {
+        loading: "Saving...",
+        success: `${data.title} has been updated`,
+        error: "Failed to update task",
+      });
     } else {
-      await addTask.mutateAsync(data);
+      toast.promise(addTask.mutateAsync(data), {
+        loading: "Saving...",
+        success: `${data.title} has been created`,
+        error: "Failed to create task",
+      });
     }
   };
 
   return (
     <div className="space-y-6">
+      <Button
+        isIconOnly
+        variant="light"
+        onPress={() => navigate("/", { unstable_viewTransition: true })}
+      >
+        <ArrowLeftIcon className="size-4" />
+      </Button>
       <h1 className="text-base font-semibold leading-7 text-gray-900">
         {id ? "Edit Task" : "Create Task"}
       </h1>

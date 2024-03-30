@@ -16,7 +16,7 @@ func CreateTask(c *fiber.Ctx) error {
 		Title         string   `json:"title" validate:"required,min=1"`
 		Description   string   `json:"description" validate:"omitempty"`
 		CreatedBy     string   `json:"createdBy" validate:"required,uuid4"`
-		DueDate       string   `json:"dueDate" validate:"omitempty,datetime"`
+		DueDate       string   `json:"dueDate" validate:"omitempty,datetime=2006-01-02"`
 		Status        string   `json:"status" validate:"required,oneof=todo inprogress done"`
 		Collaborators []string `json:"collaborators" validate:"required,gte=0,dive,uuid4"`
 	})

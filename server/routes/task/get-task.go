@@ -36,7 +36,7 @@ func GetTask(c *fiber.Ctx) error {
 
 	var title, description, status string
 	var dueDate interface{}
-	err = db.QueryRow(ctx, "SELECT title, description, status, due_date FROM tasks WHERE id = $1", v.Id).Scan(&title, &description, &status, &dueDate)
+	err = db.QueryRow(ctx, "SELECT title, description, status, TO_CHAR(due_date, 'YYYY-mm-dd') FROM tasks WHERE id = $1", v.Id).Scan(&title, &description, &status, &dueDate)
 	if err != nil {
 		return err
 	}
