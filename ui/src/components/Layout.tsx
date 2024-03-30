@@ -1,22 +1,16 @@
 import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, UserIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { NextUIProvider } from "@nextui-org/react";
+import { useUserStore } from "../store/user";
 
-const user = {
-  name: "Tom Cook",
-  email: "tom@example.com",
-  imageUrl:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-};
 const navigation = [
   { name: "Tasks", href: "/", heading: "Tasks", current: true },
 ];
 const userNavigation = [
   { name: "Your Profile", href: "/profile" },
   { name: "Settings", href: "/settings" },
-  { name: "Sign out", href: "#" },
 ];
 
 function classNames(...classes: string[]) {
@@ -24,8 +18,18 @@ function classNames(...classes: string[]) {
 }
 
 export default function Layout() {
+  const { user, setUser } = useUserStore();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  if (!user) {
+    return navigate("/login", { replace: true, unstable_viewTransition: true });
+  }
+
+  const logout = () => {
+    setUser(null);
+    navigate("/login", { replace: true, unstable_viewTransition: true });
+  };
 
   return (
     <NextUIProvider navigate={navigate}>
@@ -101,7 +105,7 @@ export default function Layout() {
                               <span className="sr-only">Open user menu</span>
                               <img
                                 className="size-8 rounded-full"
-                                src={user.imageUrl}
+                                src={UserIcon}
                                 alt=""
                               />
                             </Menu.Button>
@@ -133,6 +137,15 @@ export default function Layout() {
                                   </NavLink>
                                 </Menu.Item>
                               ))}
+                              <Menu.Item>
+                                <p
+                                  role="button"
+                                  onClick={logout}
+                                  className="block px-4 py-2 text-sm text-gray-700"
+                                >
+                                  Logout
+                                </p>
+                              </Menu.Item>
                             </Menu.Items>
                           </Transition>
                         </Menu>
@@ -165,13 +178,13 @@ export default function Layout() {
                       <div className="flex-shrink-0">
                         <img
                           className="size-10 rounded-full"
-                          src={user.imageUrl}
+                          src={UserIcon}
                           alt=""
                         />
                       </div>
                       <div className="ml-3">
                         <div className="text-base font-medium text-white">
-                          {user.name}
+                          {user.firstName} {user.lastName}
                         </div>
                         <div className="text-sm font-medium text-indigo-300">
                           {user.email}
@@ -189,6 +202,12 @@ export default function Layout() {
                           {item.name}
                         </Disclosure.Button>
                       ))}
+                      <Disclosure.Button
+                        onClick={logout}
+                        className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-indigo-500 hover:bg-opacity-75"
+                      >
+                        Logout
+                      </Disclosure.Button>
                     </div>
                   </div>
                 </Disclosure.Panel>

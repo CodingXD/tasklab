@@ -1,22 +1,40 @@
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { Button, Input } from "@nextui-org/react";
-import { useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { schema } from "./schema";
 import type { Output } from "valibot";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { fetcher } from "../../lib/utils/fetcher";
+import { useUserStore } from "../../store/user";
+import Alert from "../../components/Alert";
 
 type FormFields = Output<typeof schema>;
 
 export default function Signup() {
+  const setUser = useUserStore((state) => state.setUser);
+  const navigate = useNavigate();
   const {
     register,
     setError,
     formState: { errors, isSubmitting },
-    setValue,
     handleSubmit,
   } = useForm<FormFields>({
     resolver: valibotResolver(schema),
   });
+
+  const onSubmit: SubmitHandler<FormFields> = async (values) => {
+    try {
+      const { data } = await fetcher.post("/auth/create-account", values);
+      setUser(data);
+      navigate("/", { unstable_viewTransition: true });
+    } catch (error: any) {
+      console.log(error);
+      setError("root", {
+        message:
+          error?.response?.data || error?.message || "Something went wrong",
+      });
+    }
+  };
 
   return (
     <>
@@ -44,7 +62,12 @@ export default function Signup() {
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
           <div className="bg-white px-6 py-12 shadow-lg sm:rounded-lg sm:px-12">
-            <form className="space-y-6" action="#" method="POST">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-6"
+              method="POST"
+            >
+              {errors.root?.message && <Alert text={errors.root.message} />}
               <Input
                 {...register("firstName")}
                 label="First name"
@@ -80,7 +103,7 @@ export default function Signup() {
                   isLoading={isSubmitting}
                   className="mt-6"
                 >
-                  Sign in
+                  Sign up
                 </Button>
               </div>
             </form>

@@ -41,7 +41,7 @@ func FindUsers(c *fiber.Ctx) error {
 	}
 
 	q := strings.ToLower(v.Q)
-	rows, err := db.Query(context.Background(), "SELECT id, first_name, last_name, email FROM user WHERE first_name LIKE $1 OR email LIKE $2 limit = 10", q, q)
+	rows, err := db.Query(context.Background(), "SELECT id, first_name, last_name, email FROM users WHERE first_name LIKE $1 OR email LIKE $2 limit = 10", q, q)
 	if err != nil {
 		return err
 	}

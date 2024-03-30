@@ -45,7 +45,7 @@ func ListTasks(c *fiber.Ctx) error {
 		Role        string `json:"role"`
 	}
 
-	rows, err := db.Query(context.Background(), "SELECT task.id, title, description, status, due_date, first_name, last_name, email, role FROM task, user WHERE task.created_by = user.id AND limit = $1 AND offset = $2", v.Limit, v.Offset)
+	rows, err := db.Query(context.Background(), "SELECT task.id, title, description, status, due_date, first_name, last_name, email, role FROM task, users WHERE task.created_by = users.id AND limit = $1 AND offset = $2", v.Limit, v.Offset)
 	if err != nil {
 		return err
 	}

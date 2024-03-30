@@ -42,7 +42,7 @@ func CreateAccount(c *fiber.Ctx) error {
 
 	// checking if account already exists
 	var rows int
-	err = db.QueryRow(ctx, "SELECT COUNT(*) FROM user WHERE email = $1", strings.ToLower(v.Email)).Scan(&rows)
+	err = db.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE email = $1", strings.ToLower(v.Email)).Scan(&rows)
 	if err != nil {
 		if err != pgx.ErrNoRows {
 			return err
@@ -61,7 +61,7 @@ func CreateAccount(c *fiber.Ctx) error {
 	}
 
 	var id, role string
-	err = db.QueryRow(ctx, "INSERT INTO user(first_name, last_name, email, password) VALUES($1, $2, $3, $4, $5) RETURNING id, role", v.FirstName, v.LastName, strings.ToLower(v.Email), string(hashedPasswordByte)).Scan(&id, &role)
+	err = db.QueryRow(ctx, "INSERT INTO users(first_name, last_name, email, password) VALUES($1, $2, $3, $4) RETURNING id, role", v.FirstName, v.LastName, strings.ToLower(v.Email), string(hashedPasswordByte)).Scan(&id, &role)
 	if err != nil {
 		return err
 	}

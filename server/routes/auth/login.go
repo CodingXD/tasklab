@@ -38,7 +38,7 @@ func Login(c *fiber.Ctx) error {
 
 	// checking if user exists
 	var id, password, role string
-	err = db.QueryRow(context.Background(), "SELECT id, password, role FROM user WHERE email = $1", strings.ToLower(v.Email)).Scan(&id, &password, &role)
+	err = db.QueryRow(context.Background(), "SELECT id, password, role FROM users WHERE email = $1", strings.ToLower(v.Email)).Scan(&id, &password, &role)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			fiber.ErrBadRequest.Message = "Account not found"
