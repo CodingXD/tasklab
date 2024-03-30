@@ -13,12 +13,22 @@ import { schema } from "./schema";
 import type { Output } from "valibot";
 import RichText from "../../components/RichText";
 import { status } from "../../lib/constants/status";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { fetcher } from "../../lib/utils/fetcher";
 
 type FormFields = Output<typeof schema>;
+type SearchResult = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
 
 export default function Task() {
   let [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
+  const [searchTerm, setSearchTerm] = useState("");
   const {
     register,
     setError,
@@ -31,6 +41,36 @@ export default function Task() {
     defaultValues: {
       id,
     },
+  });
+  const [users, task] = useQueries({
+    queries: [
+      {
+        queryKey: [`users-${searchTerm}`],
+        queryFn: () =>
+          fetcher
+            .get("/user/find", { params: { q: searchTerm } })
+            .then(({ data }) => data),
+        enabled: !!searchTerm,
+      },
+      {
+        queryKey: [id],
+        queryFn: () =>
+          fetcher
+            .get("/task/find", { params: { q: searchTerm } })
+            .then(({ data }) => data),
+        enabled: !!searchTerm,
+      },
+    ],
+  });
+  const { data, isLoading, error } = useQuery({
+    queryKey: [queryKey],
+    queryFn: () =>
+      fetcher
+        .get<SearchResult[]>("/task/list", {
+          params: { limit: rowsPerPage, offset, status: activeStatus },
+        })
+        .then(({ data }) => data),
+    enabled: !!user,
   });
 
   const onSubmit: SubmitHandler<FormFields> = (data) => {

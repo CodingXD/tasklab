@@ -33,6 +33,7 @@ func main() {
 	task := app.Group("/task")
 	task.Post("/create", t.CreateTask)
 	task.Get("/list", t.ListTasks)
+	task.Get("/:id", t.GetTask)
 	task.Put("/edit", t.EditTask)
 	task.Delete("/:id", t.DeleteTask)
 
