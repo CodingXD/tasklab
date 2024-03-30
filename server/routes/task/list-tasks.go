@@ -39,13 +39,22 @@ func ListTasks(c *fiber.Ctx) error {
 		Description string `json:"description,omitempty"`
 		Status      string `json:"status"`
 		DueDate     string `json:"dueDate,omitempty"`
+		CreatorId   string `json:"creatorId"`
 		FirstName   string `json:"firstName"`
 		LastName    string `json:"lastName"`
 		Email       string `json:"email"`
 		Role        string `json:"role"`
 	}
 
-	rows, err := db.Query(context.Background(), "SELECT tasks.id, title, description, status, due_date, first_name, last_name, email, role FROM tasks, users WHERE tasks.created_by = users.id limit $1 offset $2", v.Limit, v.Offset)
+	ctx := context.Background()
+
+	var total int
+	err = db.QueryRow(ctx, "SELECT COUNT(*) FROM tasks, users WHERE tasks.created_by = users.id").Scan(&total)
+	if err != nil {
+		return err
+	}
+
+	rows, err := db.Query(ctx, "SELECT tasks.id, title, description, status, due_date, users.id, first_name, last_name, email, role FROM tasks, users WHERE tasks.created_by = users.id limit $1 offset $2", v.Limit, v.Offset)
 	if err != nil {
 		return err
 	}
@@ -53,7 +62,7 @@ func ListTasks(c *fiber.Ctx) error {
 	var tasks []Response
 	for rows.Next() {
 		var r Response
-		err = rows.Scan(&r.Id, &r.Title, &r.Description, &r.Status, &r.DueDate, &r.FirstName, &r.LastName, &r.Email, &r.Role)
+		err = rows.Scan(&r.Id, &r.Title, &r.Description, &r.Status, &r.DueDate, &r.CreatorId, &r.FirstName, &r.LastName, &r.Email, &r.Role)
 		if err != nil {
 			return err
 		}
@@ -67,12 +76,14 @@ func ListTasks(c *fiber.Ctx) error {
 	type Paginate struct {
 		Limit  int        `json:"limit"`
 		Offset int        `json:"offset"`
+		Total  int        `json:"total"`
 		Data   []Response `json:"data"`
 	}
 
 	return c.JSON(Paginate{
 		Limit:  v.Limit,
 		Offset: v.Offset,
+		Total:  total,
 		Data:   tasks,
 	})
 }

@@ -10,9 +10,9 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-  Tooltip,
   getKeyValue,
   Link as NextLink,
+  Pagination,
 } from "@nextui-org/react";
 import { type Key, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
@@ -22,33 +22,6 @@ import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../lib/utils/fetcher";
 
 const filters = [{ label: "All", key: "all" }, ...status];
-
-const rows = [
-  {
-    key: "1",
-    todo: "Tony Reichert",
-    creator: "CEO",
-    status: "Active",
-  },
-  {
-    key: "2",
-    todo: "Zoey Lang",
-    creator: "Technical Lead",
-    status: "Paused",
-  },
-  {
-    key: "3",
-    todo: "Jane Fisher",
-    creator: "Senior Developer",
-    status: "Active",
-  },
-  {
-    key: "4",
-    todo: "William Howard",
-    creator: "Community Manager",
-    status: "Vacation",
-  },
-];
 
 const columns = [
   {
@@ -66,76 +39,90 @@ const columns = [
 ];
 
 const statusColorMap = {
-  active: "success",
-  paused: "danger",
-  vacation: "warning",
+  todo: "default",
+  inprogress: "warning",
+  done: "success",
+} as const;
+
+type Task = {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  dueDate?: string;
+  creatorId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+};
+
+type Paginate = {
+  limit: number;
+  offset: number;
+  total: number;
+  data: Task[] | null;
 };
 
 export default function Home() {
   const user = useUserStore((state) => state.user);
   const [activeStatus, setActiveStatus] = useState("all");
-  const [selectedTasks, setSelectedTasks] = useState(new Set([]));
-  const [limit, setLimit] = useState(10);
-  const [offset, setOffset] = useState(0);
-  const queryKey = ``;
+  const [selectedTasks, setSelectedTasks] = useState(new Set<string>([]));
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 10;
+  const offset = rowsPerPage * (page - 1);
+  const queryKey = `distributors-${page}-${rowsPerPage}-${offset}-${activeStatus}`;
   const { data, isLoading, error } = useQuery({
     queryKey: [queryKey],
     queryFn: () =>
       fetcher
-        .get("/task/list", { params: { limit, offset, status: activeStatus } })
+        .get<Paginate>("/task/list", {
+          params: { limit: rowsPerPage, offset, status: activeStatus },
+        })
         .then(({ data }) => data),
     enabled: !!user,
   });
 
-  const renderCell = useCallback(
-    (task: (typeof rows)[number], columnKey: Key) => {
-      const cellValue = getKeyValue(task, columnKey);
+  const renderCell = useCallback((task: Task, columnKey: Key) => {
+    const cellValue = getKeyValue(task, columnKey);
 
-      switch (columnKey) {
-        case "todo":
-          return (
-            <Link
-              to={`new?id=${task.key}`}
-              className="flex items-center text-bold text-sm hover:underline hover:underline-offset-2"
-            >
-              {cellValue}
-            </Link>
-          );
-        case "status":
-          return (
-            <Chip
-              className="capitalize"
-              color={statusColorMap[cellValue]}
-              size="sm"
-              variant="flat"
-            >
-              {cellValue}
-            </Chip>
-          );
-        case "actions":
-          return (
-            <div className="relative flex items-center gap-2">
-              {["member", "admin"].includes(user?.role ?? "member") ? (
-                <Tooltip color="danger" content="Delete task">
-                  <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                    <TrashIcon
-                      className="size-4"
-                      onClick={() => {
-                        setSelectedTaskId(task.id);
-                        onOpen();
-                      }}
-                    />
-                  </span>
-                </Tooltip>
-              ) : null}
-            </div>
-          );
-        default:
-          return cellValue;
-      }
-    },
-    []
-  );
+    switch (columnKey) {
+      case "todo":
+        return (
+          <Link
+            to={`new?id=${task.id}`}
+            className="flex items-center text-bold text-sm hover:underline hover:underline-offset-2"
+          >
+            {cellValue}
+          </Link>
+        );
+      case "status":
+        return (
+          <Chip
+            className="capitalize"
+            color={statusColorMap[task.status]}
+            size="sm"
+            variant="flat"
+          >
+            {cellValue}
+          </Chip>
+        );
+      case "actions":
+        return (
+          <div className="relative flex items-center gap-2">
+            {user?.role === "admin" || user?.id === task.creatorId ? (
+              <Button isIconOnly color="danger" onPress={() => {}}>
+                <TrashIcon className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        );
+      default:
+        return cellValue;
+    }
+  }, []);
+
+  const pages = data?.total ? Math.ceil(data.total / rowsPerPage) : 0;
 
   return (
     <div className="space-y-4">
@@ -176,9 +163,29 @@ export default function Home() {
       <Table
         selectionMode="multiple"
         onSortChange={console.log}
-        onSelectionChange={setSelectedTasks}
+        onSelectionChange={setSelectedTasks as any}
         selectedKeys={selectedTasks}
         aria-label="List of todo's"
+        bottomContent={
+          pages > 1 ? (
+            <div className="flex w-full justify-center">
+              <Pagination
+                isCompact
+                showControls
+                showShadow
+                color="secondary"
+                page={page}
+                total={pages}
+                onChange={setPage}
+                classNames={{
+                  item: "text-default-800",
+                  next: "text-default-800",
+                  prev: "text-default-800",
+                }}
+              />
+            </div>
+          ) : null
+        }
       >
         <TableHeader columns={columns}>
           {(column) => (
@@ -199,10 +206,10 @@ export default function Home() {
               <small>No tasks to show.</small>
             )
           }
-          items={rows}
+          items={data?.data || []}
         >
           {(item) => (
-            <TableRow key={item.key}>
+            <TableRow key={item.id}>
               {(columnKey) => (
                 <TableCell>{renderCell(item, columnKey)}</TableCell>
               )}
