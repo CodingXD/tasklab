@@ -39,11 +39,19 @@ func CreateTask(c *fiber.Ctx) error {
 	defer db.Close()
 
 	ctx := context.Background()
+	fmt.Printf("%+v\n", v)
 
 	var id string
-	err = db.QueryRow(ctx, "INSERT INTO tasks(title, description, status, due_date, created_by) VALUES($1, $2, $3, $4, $5) RETURNING id", v.Title, v.Description, v.Status, v.DueDate, v.CreatedBy).Scan(&id)
+	err = db.QueryRow(ctx, "INSERT INTO tasks(title, description, status, created_by) VALUES($1, $2, $3, $4) RETURNING id", v.Title, v.Description, v.Status, v.CreatedBy).Scan(&id)
 	if err != nil {
 		return err
+	}
+
+	if v.DueDate != "" {
+		_, err = db.Exec(ctx, "UPDATE tasks SET due_date = $1 WHERE id = $2", v.DueDate, id)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(v.Collaborators) > 0 {
@@ -62,5 +70,5 @@ func CreateTask(c *fiber.Ctx) error {
 		}
 	}
 
-	return nil
+	return c.SendString(id)
 }

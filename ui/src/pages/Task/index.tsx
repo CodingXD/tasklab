@@ -13,33 +13,46 @@ import { schema } from "./schema";
 import type { Output } from "valibot";
 import RichText from "../../components/RichText";
 import { status } from "../../lib/constants/status";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { fetcher } from "../../lib/utils/fetcher";
+import { useUserStore } from "../../store/user";
 
 type FormFields = Output<typeof schema>;
-type SearchResult = {
+type User = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
 };
 
+type Task = {
+  title: string;
+  description?: any;
+  status: string;
+  dueDate?: string;
+  collaborators: User[];
+};
+
 export default function Task() {
+  const user = useUserStore((state) => state.user);
+  const queryClient = useQueryClient();
   let [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
   const [searchTerm, setSearchTerm] = useState("");
   const {
     register,
-    setError,
     formState: { errors, isSubmitting },
     setValue,
     handleSubmit,
     watch,
+    setError,
   } = useForm<FormFields>({
     resolver: valibotResolver(schema),
     defaultValues: {
       id,
+      collaborators: [],
+      createdBy: user?.id,
     },
   });
   const [users, task] = useQueries({
@@ -48,34 +61,41 @@ export default function Task() {
         queryKey: [`users-${searchTerm}`],
         queryFn: () =>
           fetcher
-            .get("/user/find", { params: { q: searchTerm } })
+            .get<User[]>("/user/find", { params: { q: searchTerm } })
             .then(({ data }) => data),
         enabled: !!searchTerm,
       },
       {
         queryKey: [id],
-        queryFn: () =>
-          fetcher
-            .get("/task/find", { params: { q: searchTerm } })
-            .then(({ data }) => data),
-        enabled: !!searchTerm,
+        queryFn: () => fetcher.get(`/task/${id}`).then(({ data }) => data),
+        enabled: !!id,
       },
     ],
   });
-  const { data, isLoading, error } = useQuery({
-    queryKey: [queryKey],
-    queryFn: () =>
+  const addTask = useMutation({
+    mutationFn: (data: FormFields) =>
       fetcher
-        .get<SearchResult[]>("/task/list", {
-          params: { limit: rowsPerPage, offset, status: activeStatus },
-        })
+        .post<string>("/task/create", data, { responseType: "text" })
         .then(({ data }) => data),
-    enabled: !!user,
+    onSuccess: (id) => setSearchParams({ id }),
+    onError: (error: any) =>
+      setError("root", {
+        message:
+          error?.response?.data || error.message || "Something went wrong",
+      }),
+  });
+  const editTask = useMutation({
+    mutationFn: (data: FormFields & { id: string }) =>
+      fetcher.put("/task/edit", data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [id] }),
+    onError: (error: any) =>
+      setError("root", {
+        message:
+          error?.response?.data || error.message || "Something went wrong",
+      }),
   });
 
-  const onSubmit: SubmitHandler<FormFields> = (data) => {
-    console.log(data);
-  };
+  const onSubmit: SubmitHandler<FormFields> = (data) => addTask.mutate(data);
 
   return (
     <div className="space-y-6">
@@ -96,17 +116,17 @@ export default function Task() {
           />
           <Autocomplete
             className="max-w-xs"
-            inputValue={list.filterText}
-            isLoading={list.isLoading}
-            items={list.items}
-            label="Select a character"
+            inputValue={searchTerm}
+            isLoading={users.isFetching}
+            items={users.data || []}
+            label="Choose collaborators"
             placeholder="Type to search..."
-            variant="bordered"
-            onInputChange={list.setFilterText}
+            onInputChange={setSearchTerm}
+            errorMessage={users.error?.message}
           >
             {(item) => (
-              <AutocompleteItem key={item.name} className="capitalize">
-                {item.name}
+              <AutocompleteItem key={item.id} className="capitalize">
+                {item.firstName} {item.lastName}
               </AutocompleteItem>
             )}
           </Autocomplete>

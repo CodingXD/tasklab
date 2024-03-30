@@ -34,8 +34,9 @@ func GetTask(c *fiber.Ctx) error {
 
 	ctx := context.Background()
 
-	var title, description, status, due_date string
-	err = db.QueryRow(ctx, "SELECT title, description, status, due_date FROM users WHERE id = $1", v.Id).Scan(&title, &description, &status, &due_date)
+	var title, description, status string
+	var dueDate interface{}
+	err = db.QueryRow(ctx, "SELECT title, description, status, due_date FROM tasks WHERE id = $1", v.Id).Scan(&title, &description, &status, &dueDate)
 	if err != nil {
 		return err
 	}
@@ -66,5 +67,19 @@ func GetTask(c *fiber.Ctx) error {
 		return rows.Err()
 	}
 
-	return c.JSON(users)
+	type Response struct {
+		Title         string      `json:"title"`
+		Description   string      `json:"description,omitempty"`
+		Status        string      `json:"status"`
+		DueDate       interface{} `json:"dueDate,omitempty"`
+		Collaborators []User      `json:"collaborators"`
+	}
+
+	return c.JSON(Response{
+		Title:         title,
+		Description:   description,
+		Status:        status,
+		DueDate:       dueDate,
+		Collaborators: users,
+	})
 }

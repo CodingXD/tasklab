@@ -1,8 +1,7 @@
 import {
-  any,
   array,
+  coerce,
   minLength,
-  number,
   object,
   optional,
   picklist,
@@ -15,11 +14,9 @@ export const schema = object({
   id: optional(string([uuid("Invalid Task Id")])),
   title: string([minLength(1, "Title is required")]),
   description: optional(
-    object({
-      blocks: array(any()),
-      version: string(),
-      time: number(),
-    })
+    coerce(string(), (val) =>
+      typeof val === "object" ? JSON.stringify(val) : val
+    )
   ),
   status: picklist(
     status.map(({ key }) => key),
@@ -27,4 +24,5 @@ export const schema = object({
   ),
   dueDate: optional(string()),
   collaborators: array(string([uuid()])),
+  createdBy: string([uuid()]),
 });

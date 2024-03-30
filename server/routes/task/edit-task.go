@@ -40,7 +40,14 @@ func EditTask(c *fiber.Ctx) error {
 
 	ctx := context.Background()
 
-	_, err = db.Exec(ctx, "UPDATE tasks SET title = $1, description = $2, status = $3, due_date = $4, updated_at = NOW() WHERE id = $5", v.Title, v.Description, v.Status, v.DueDate, v.Id)
+	args := []interface{}{v.Title, v.Description, v.Status}
+	if v.DueDate == "" {
+		args = append(args, nil)
+	} else {
+		args = append(args, v.DueDate)
+	}
+	args = append(args, v.Id)
+	_, err = db.Exec(ctx, "UPDATE tasks SET title = $1, description = $2, status = $3, updated_at = NOW(), due_date = $4 WHERE id = $5", args...)
 	if err != nil {
 		return err
 	}
