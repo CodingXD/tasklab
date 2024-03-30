@@ -1,7 +1,8 @@
 import { Fragment } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NextUIProvider } from "@nextui-org/react";
 
 const user = {
   name: "Tom Cook",
@@ -10,7 +11,7 @@ const user = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 const navigation = [
-  { name: "Tasks", href: "/", heading: "Dashboard", current: true },
+  { name: "Tasks", href: "/", heading: "Tasks", current: true },
 ];
 const userNavigation = [
   { name: "Your Profile", href: "/profile" },
@@ -24,9 +25,10 @@ function classNames(...classes: string[]) {
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   return (
-    <>
+    <NextUIProvider navigate={navigate}>
       <div className="min-h-full">
         <div className="bg-indigo-600 pb-32">
           <Disclosure
@@ -213,6 +215,6 @@ export default function Layout() {
           </div>
         </main>
       </div>
-    </>
+    </NextUIProvider>
   );
 }

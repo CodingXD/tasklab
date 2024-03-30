@@ -7,3 +7,8 @@
     font-family: "Noto Sans", system-ui, sans-serif;
   }
 }
+
+.ce-block__content,
+.ce-toolbar__content {
+  @apply max-w-screen-lg lg:px-0 px-10;
+}

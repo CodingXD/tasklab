@@ -1,84 +1,56 @@
-import "@mantine/tiptap/styles.css";
-import { RichTextEditor, Link } from "@mantine/tiptap";
-import { type Editor, useEditor } from "@tiptap/react";
-import Highlight from "@tiptap/extension-highlight";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import Superscript from "@tiptap/extension-superscript";
-import SubScript from "@tiptap/extension-subscript";
-import type { Transaction } from "@tiptap/pm/state";
-
-const content =
-  '<h2 style="text-align: center;">Welcome to Mantine rich text editor</h2><p><code>RichTextEditor</code> component focuses on usability and is designed to be as simple as possible to bring a familiar editing experience to regular users. <code>RichTextEditor</code> is based on <a href="https://tiptap.dev/" rel="noopener noreferrer" target="_blank">Tiptap.dev</a> and supports all of its features:</p><ul><li>General text formatting: <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>strike-through</s> </li><li>Headings (h1-h6)</li><li>Sub and super scripts (<sup>&lt;sup /&gt;</sup> and <sub>&lt;sub /&gt;</sub> tags)</li><li>Ordered and bullet lists</li><li>Text align&nbsp;</li><li>And all <a href="https://tiptap.dev/extensions" target="_blank" rel="noopener noreferrer">other extensions</a></li></ul>';
+import EditorJS, {
+  type OutputData,
+  type API,
+  type BlockMutationEvent,
+} from "@editorjs/editorjs";
+import Quote from "@editorjs/quote";
+import Header from "@editorjs/header";
+import List from "@editorjs/list";
+import SimpleImage from "@editorjs/simple-image";
+import { useEffect, useId, useRef } from "react";
 
 type Props = {
-  onUpdate: (props: { editor: Editor; transaction: Transaction }) => void;
+  onChange: (
+    api: API,
+    event: BlockMutationEvent | BlockMutationEvent[]
+  ) => void;
+  data?: OutputData;
 };
 
-export default function RichText({ onUpdate }: Props) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Link,
-      Superscript,
-      SubScript,
-      Highlight,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-    ],
-    content,
-    onUpdate: onUpdate as any,
-  });
+export default function RichText({ data, onChange }: Props) {
+  const id = useId();
+  const initialized = useRef(false);
 
-  return (
-    <RichTextEditor editor={editor}>
-      <RichTextEditor.Toolbar sticky stickyOffset={60}>
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.Bold />
-          <RichTextEditor.Italic />
-          <RichTextEditor.Underline />
-          <RichTextEditor.Strikethrough />
-          <RichTextEditor.ClearFormatting />
-          <RichTextEditor.Highlight />
-          <RichTextEditor.Code />
-        </RichTextEditor.ControlsGroup>
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
 
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.H1 />
-          <RichTextEditor.H2 />
-          <RichTextEditor.H3 />
-          <RichTextEditor.H4 />
-        </RichTextEditor.ControlsGroup>
+      new EditorJS({
+        holder: id,
+        tools: {
+          quote: {
+            class: Quote,
+            config: {
+              quotePlaceholder: "Enter a quote",
+              captionPlaceholder: "Quote's author",
+            },
+          },
+          header: Header,
+          image: SimpleImage,
+          list: {
+            class: List,
+            inlineToolbar: true,
+            config: {
+              defaultStyle: "unordered",
+            },
+          },
+        },
+        placeholder: "Start typing.....",
+        onChange,
+        data,
+      });
+    }
+  }, []);
 
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.Blockquote />
-          <RichTextEditor.Hr />
-          <RichTextEditor.BulletList />
-          <RichTextEditor.OrderedList />
-          <RichTextEditor.Subscript />
-          <RichTextEditor.Superscript />
-        </RichTextEditor.ControlsGroup>
-
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.Link />
-          <RichTextEditor.Unlink />
-        </RichTextEditor.ControlsGroup>
-
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.AlignLeft />
-          <RichTextEditor.AlignCenter />
-          <RichTextEditor.AlignJustify />
-          <RichTextEditor.AlignRight />
-        </RichTextEditor.ControlsGroup>
-
-        <RichTextEditor.ControlsGroup>
-          <RichTextEditor.Undo />
-          <RichTextEditor.Redo />
-        </RichTextEditor.ControlsGroup>
-      </RichTextEditor.Toolbar>
-
-      <RichTextEditor.Content />
-    </RichTextEditor>
-  );
+  return <div id={id} className="bg-default-100 rounded-medium py-3.5"></div>;
 }
