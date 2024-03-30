@@ -25,3 +25,5 @@ CREATE TABLE IF NOT EXISTS collaborators (
     task_id uuid REFERENCES tasks(id) NOT NULL,
     user_id uuid REFERENCES users(id) NOT NULL
 )
+
+INSERT INTO users (first_name, last_name, email, password, role) VALUES ('Admin', 'Tasklab', 'admin@tasklab.com', '$2a$10$/Jm4amD/d09stoXqTHtSOOOsRtX25Lb4a420fj30ul2gLQ5v5Wbt2', 'admin')

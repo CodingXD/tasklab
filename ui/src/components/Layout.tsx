@@ -5,7 +5,13 @@ import {
   UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { NextUIProvider } from "@nextui-org/react";
 import { useUserStore } from "../store/user";
 
@@ -20,13 +26,12 @@ export default function Layout() {
   const navigate = useNavigate();
 
   if (!user) {
-    navigate("/login", { replace: true, unstable_viewTransition: true });
+    navigate("/login", { replace: true });
     return <></>;
   }
 
   const logout = () => {
     setUser(null);
-    navigate("/login", { replace: true, unstable_viewTransition: true });
   };
 
   return (
@@ -42,13 +47,17 @@ export default function Layout() {
                 <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
                   <div className="relative flex h-16 items-center justify-between lg:border-b lg:border-indigo-400 lg:border-opacity-25">
                     <div className="flex items-center px-2 lg:px-0">
-                      <div className="flex-shrink-0">
+                      <Link
+                        to="/"
+                        unstable_viewTransition
+                        className="flex-shrink-0"
+                      >
                         <img
                           className="block size-8"
                           src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=300"
-                          alt="Your Company"
+                          alt="Tasklab"
                         />
-                      </div>
+                      </Link>
                     </div>
                     <div className="flex lg:hidden">
                       {/* Mobile menu button */}

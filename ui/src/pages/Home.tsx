@@ -25,7 +25,7 @@ const filters = [{ label: "All", key: "all" }, ...status];
 
 const columns = [
   {
-    key: "todo",
+    key: "title",
     label: "TODO",
   },
   {
@@ -42,7 +42,7 @@ const statusColorMap = {
   todo: "default",
   inprogress: "warning",
   done: "success",
-} as const;
+} as Record<string, string>;
 
 type Task = {
   id: string;
@@ -67,17 +67,21 @@ type Paginate = {
 export default function Home() {
   const user = useUserStore((state) => state.user);
   const [activeStatus, setActiveStatus] = useState("all");
-  const [selectedTasks, setSelectedTasks] = useState(new Set<string>([]));
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
   const offset = rowsPerPage * (page - 1);
-  const queryKey = `distributors-${page}-${rowsPerPage}-${offset}-${activeStatus}`;
+  const queryKey = `tasks-${page}-${rowsPerPage}-${offset}-${activeStatus}-${user?.id}`;
   const { data, isLoading, error } = useQuery({
     queryKey: [queryKey],
     queryFn: () =>
       fetcher
         .get<Paginate>("/task/list", {
-          params: { limit: rowsPerPage, offset, status: activeStatus },
+          params: {
+            limit: rowsPerPage,
+            offset,
+            status: activeStatus,
+            userId: user?.id,
+          },
         })
         .then(({ data }) => data),
     enabled: !!user,
@@ -87,7 +91,7 @@ export default function Home() {
     const cellValue = getKeyValue(task, columnKey);
 
     switch (columnKey) {
-      case "todo":
+      case "title":
         return (
           <Link
             to={`new?id=${task.id}`}
@@ -100,7 +104,7 @@ export default function Home() {
         return (
           <Chip
             className="capitalize"
-            color={statusColorMap[task.status]}
+            color={statusColorMap[task.status as any] as any}
             size="sm"
             variant="flat"
           >
@@ -149,22 +153,8 @@ export default function Home() {
         </Button>
       </div>
 
-      {[...selectedTasks].length > 0 && (
-        <div className="flex space-x-2">
-          <Button color="secondary" variant="flat" size="sm">
-            Mark as Done
-          </Button>
-          <Button color="danger" variant="flat" size="sm" isIconOnly>
-            <TrashIcon className="size-3.5" />
-          </Button>
-        </div>
-      )}
-
       <Table
-        selectionMode="multiple"
         onSortChange={console.log}
-        onSelectionChange={setSelectedTasks as any}
-        selectedKeys={selectedTasks}
         aria-label="List of todo's"
         bottomContent={
           pages > 1 ? (

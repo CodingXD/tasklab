@@ -5,16 +5,16 @@ import {
   Input,
   Select,
   SelectItem,
+  Textarea,
 } from "@nextui-org/react";
 import { useSearchParams } from "react-router-dom";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { valibotResolver } from "@hookform/resolvers/valibot";
 import { schema } from "./schema";
 import type { Output } from "valibot";
-import RichText from "../../components/RichText";
 import { status } from "../../lib/constants/status";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetcher } from "../../lib/utils/fetcher";
 import { useUserStore } from "../../store/user";
 
@@ -31,7 +31,7 @@ type Task = {
   description?: any;
   status: string;
   dueDate?: string;
-  collaborators: User[];
+  collaborators: User[] | null;
 };
 
 export default function Task() {
@@ -40,9 +40,10 @@ export default function Task() {
   let [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
   const [searchTerm, setSearchTerm] = useState("");
+
   const {
     register,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     setValue,
     handleSubmit,
     watch,
@@ -55,6 +56,7 @@ export default function Task() {
       createdBy: user?.id,
     },
   });
+
   const [users, task] = useQueries({
     queries: [
       {
@@ -67,17 +69,41 @@ export default function Task() {
       },
       {
         queryKey: [id],
-        queryFn: () => fetcher.get(`/task/${id}`).then(({ data }) => data),
+        queryFn: () =>
+          fetcher.get<Task>(`/task/${id}`).then(({ data }) => data),
         enabled: !!id,
       },
     ],
   });
+
+  useEffect(() => {
+    if (task.data) {
+      setValue("title", task.data.title);
+      if (task.data.description) {
+        setValue("description", task.data.description);
+      }
+      if (task.data.dueDate) {
+        setValue("dueDate", task.data.dueDate);
+      }
+      if (task.data.collaborators) {
+        setValue(
+          "collaborators",
+          task.data.collaborators.map(({ id }) => id)
+        );
+      }
+      setValue("status", task.data.status as any);
+    }
+  }, [task.data]);
+
   const addTask = useMutation({
     mutationFn: (data: FormFields) =>
       fetcher
         .post<string>("/task/create", data, { responseType: "text" })
         .then(({ data }) => data),
-    onSuccess: (id) => setSearchParams({ id }),
+    onSuccess: (id) => {
+      queryClient.clear();
+      setSearchParams({ id });
+    },
     onError: (error: any) =>
       setError("root", {
         message:
@@ -85,8 +111,7 @@ export default function Task() {
       }),
   });
   const editTask = useMutation({
-    mutationFn: (data: FormFields & { id: string }) =>
-      fetcher.put("/task/edit", data),
+    mutationFn: (data: FormFields) => fetcher.put("/task/edit", data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [id] }),
     onError: (error: any) =>
       setError("root", {
@@ -95,7 +120,13 @@ export default function Task() {
       }),
   });
 
-  const onSubmit: SubmitHandler<FormFields> = (data) => addTask.mutate(data);
+  const onSubmit: SubmitHandler<FormFields> = async (data) => {
+    if (data.id) {
+      await editTask.mutateAsync(data);
+    } else {
+      await addTask.mutateAsync(data);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -131,19 +162,18 @@ export default function Task() {
             )}
           </Autocomplete>
         </div>
-        <RichText
-          data={watch("description") as any}
-          onChange={(api) =>
-            api.saver
-              .save()
-              .then((data) => setValue("description", data as any))
-          }
+        <Textarea
+          {...register("description")}
+          label="Description"
+          value={watch("description")}
+          errorMessage={errors.description?.message}
         />
+
         <Select
           items={status}
           label="Status"
           className="max-w-xs"
-          defaultSelectedKeys={["todo"]}
+          selectedKeys={[watch("status", "todo")]}
           disallowEmptySelection
           errorMessage={errors.status?.message}
           {...register("status")}
@@ -165,7 +195,7 @@ export default function Task() {
           color="success"
           fullWidth
           className="text-white"
-          isLoading={isSubmitting}
+          isLoading={addTask.isPending || editTask.isPending}
         >
           Save
         </Button>
