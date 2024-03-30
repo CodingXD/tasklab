@@ -1,7 +1,7 @@
 import {
-  Autocomplete,
-  AutocompleteItem,
+  Avatar,
   Button,
+  Chip,
   Input,
   Select,
   SelectItem,
@@ -14,7 +14,7 @@ import { schema } from "./schema";
 import type { Output } from "valibot";
 import { status } from "../../lib/constants/status";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { fetcher } from "../../lib/utils/fetcher";
 import { useUserStore } from "../../store/user";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -42,7 +42,6 @@ export default function Task() {
   const navigate = useNavigate();
   let [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") ?? undefined;
-  const [searchTerm, setSearchTerm] = useState("");
 
   const {
     register,
@@ -63,12 +62,9 @@ export default function Task() {
   const [users, task] = useQueries({
     queries: [
       {
-        queryKey: [`users-${searchTerm}`],
+        queryKey: ["users"],
         queryFn: () =>
-          fetcher
-            .get<User[]>("/user/find", { params: { q: searchTerm } })
-            .then(({ data }) => data),
-        enabled: !!searchTerm,
+          fetcher.get<User[]>("/user/list").then(({ data }) => data),
       },
       {
         queryKey: [id],
@@ -163,22 +159,53 @@ export default function Task() {
             label="Title"
             errorMessage={errors.title?.message}
           />
-          <Autocomplete
-            className="max-w-xs"
-            inputValue={searchTerm}
-            isLoading={users.isFetching}
-            items={users.data || []}
+          <Select
+            items={users.data?.filter(({ id }) => id !== user?.id) || []}
             label="Choose collaborators"
+            isMultiline={true}
+            selectionMode="multiple"
+            selectedKeys={watch("collaborators")}
+            onSelectionChange={(keys: any) =>
+              setValue("collaborators", [...keys])
+            }
             placeholder="Type to search..."
-            onInputChange={setSearchTerm}
-            errorMessage={users.error?.message}
+            labelPlacement="outside"
+            classNames={{
+              base: "max-w-xs",
+              trigger: "min-h-unit-12 py-2",
+            }}
+            renderValue={(items) => {
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {items.map((item) => (
+                    <Chip key={item.key}>
+                      {item.data?.firstName} {item.data?.lastName}
+                    </Chip>
+                  ))}
+                </div>
+              );
+            }}
           >
-            {(item) => (
-              <AutocompleteItem key={item.id} className="capitalize">
-                {item.firstName} {item.lastName}
-              </AutocompleteItem>
+            {(user) => (
+              <SelectItem key={user.id} textValue={user.id}>
+                <div className="flex gap-2 items-center">
+                  <Avatar
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="flex-shrink-0"
+                    size="sm"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-small">
+                      {user.firstName} {user.lastName}
+                    </span>
+                    <span className="text-tiny text-default-400">
+                      {user.email}
+                    </span>
+                  </div>
+                </div>
+              </SelectItem>
             )}
-          </Autocomplete>
+          </Select>
         </div>
         <Textarea
           {...register("description")}

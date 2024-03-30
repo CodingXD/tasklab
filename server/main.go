@@ -39,7 +39,7 @@ func main() {
 
 	// user routes
 	user := app.Group("/user")
-	user.Get("/find", u.FindUsers)
+	user.Get("/list", u.ListUsers)
 
 	app.Listen(":3000")
 }
